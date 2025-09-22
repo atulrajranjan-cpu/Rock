@@ -9,11 +9,6 @@ mp_hands = mp.solutions.hands
 hands = mp_hands.Hands(min_detection_confidence=0.7, min_tracking_confidence=0.7)
 mp_draw = mp.solutions.drawing_utils
 
-# Game variables
-player_score = 0
-computer_score = 0
-game_rounds = 5
-
 st.title("Rock-Paper-Scissors: Hand Gesture Game")
 st.write("Take a picture of your hand gesture to play!")
 st.write("🖐️ Rock: 0 fingers up")
@@ -80,3 +75,8 @@ if img_file_buffer is not None:
 
     else:
         st.write("Could not detect a valid hand gesture. Try again.")
+
+***
+This video, titled "Streamlit FAQ on ModuleNotFoundError," provides a helpful guide on troubleshooting common dependency issues during Streamlit deployment.
+[Streamlit FAQ on ModuleNotFoundError](https://www.youtube.com/watch?v=3YutfZE1K74)
+http://googleusercontent.com/youtube_content/1
