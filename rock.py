@@ -68,7 +68,6 @@ class RockPaperScissorsProcessor(VideoProcessorBase):
                 self.mp_drawing.draw_landmarks(img, hand_landmarks, self.mp_hands.HAND_CONNECTIONS)
                 self.player_choice = self.get_gesture(hand_landmarks)
 
-        # Game Logic
         if st.session_state.game_active:
             if time.time() - self.start_time > 1:
                 self.countdown -= 1
@@ -89,7 +88,6 @@ class RockPaperScissorsProcessor(VideoProcessorBase):
                 st.session_state.game_active = False
                 st.experimental_rerun()
         
-        # Display countdown
         if st.session_state.game_active:
             text = f"SHOW! ({self.countdown})"
         else:
