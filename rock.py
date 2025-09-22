@@ -86,7 +86,7 @@ class RockPaperScissorsProcessor(VideoProcessorBase):
                 st.session_state.computer_choice = self.computer_choice
                 st.session_state.result = self.result
                 st.session_state.game_active = False
-                st.experimental_rerun()
+                st.rerun()
         
         if st.session_state.game_active:
             text = f"SHOW! ({self.countdown})"
@@ -140,8 +140,8 @@ if st.session_state.player_score >= rounds_to_win or st.session_state.computer_s
     if st.button("Play Again?"):
         st.session_state.player_score = 0
         st.session_state.computer_score = 0
-        st.experimental_rerun()
+        st.rerun()
 
 if st.button("Start Round"):
     st.session_state.game_active = True
-    st.experimental_rerun()
+    st.rerun()
