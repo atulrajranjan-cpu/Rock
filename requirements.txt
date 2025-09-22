@@ -1,6 +1,6 @@
 streamlit
+mediapipe
 cvzone
-opencv-python-headless
 
 
 
