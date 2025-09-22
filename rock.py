@@ -1,103 +1,85 @@
 import streamlit as st
 import random
-import time
 
-# Try to import OpenCV and MediaPipe
-try:
-    import cv2
-    import mediapipe as mp
-    webcam_available = True
-except:
-    webcam_available = False
-
+# --- Game Variables ---
 choices = ['rock', 'paper', 'scissors']
-rounds_to_win = 3
+rounds_to_win = 3  # Best of 5
 
-# --- Gesture detection (only if webcam works locally) ---
-if webcam_available:
-    mp_hands = mp.solutions.hands
-    hands = mp_hands.Hands(min_detection_confidence=0.7, min_tracking_confidence=0.5)
-    mp_drawing = mp.solutions.drawing_utils
+# --- Streamlit Session State ---
+if 'player_score' not in st.session_state:
+    st.session_state.player_score = 0
+if 'computer_score' not in st.session_state:
+    st.session_score = 0
+if 'game_started' not in st.session_state:
+    st.session_state.game_started = False
+if 'winner_message' not in st.session_state:
+    st.session_state.winner_message = ""
 
-    def get_gesture(hand_landmarks):
-        if not hand_landmarks:
-            return None
-        landmarks = hand_landmarks.landmark
-
-        # Rock
-        if (landmarks[mp_hands.HandLandmark.INDEX_FINGER_TIP].y >
-            landmarks[mp_hands.HandLandmark.INDEX_FINGER_PIP].y and
-            landmarks[mp_hands.HandLandmark.MIDDLE_FINGER_TIP].y >
-            landmarks[mp_hands.HandLandmark.MIDDLE_FINGER_PIP].y and
-            landmarks[mp_hands.HandLandmark.RING_FINGER_TIP].y >
-            landmarks[mp_hands.HandLandmark.RING_FINGER_PIP].y and
-            landmarks[mp_hands.HandLandmark.PINKY_TIP].y >
-            landmarks[mp_hands.HandLandmark.PINKY_PIP].y):
-            return 'rock'
-
-        # Paper
-        elif (landmarks[mp_hands.HandLandmark.INDEX_FINGER_TIP].y <
-              landmarks[mp_hands.HandLandmark.INDEX_FINGER_PIP].y and
-              landmarks[mp_hands.HandLandmark.MIDDLE_FINGER_TIP].y <
-              landmarks[mp_hands.HandLandmark.MIDDLE_FINGER_PIP].y and
-              landmarks[mp_hands.HandLandmark.RING_FINGER_TIP].y <
-              landmarks[mp_hands.HandLandmark.RING_FINGER_PIP].y and
-              landmarks[mp_hands.HandLandmark.PINKY_TIP].y <
-              landmarks[mp_hands.HandLandmark.PINKY_PIP].y):
-            return 'paper'
-
-        # Scissors
-        elif (landmarks[mp_hands.HandLandmark.INDEX_FINGER_TIP].y <
-              landmarks[mp_hands.HandLandmark.INDEX_FINGER_PIP].y and
-              landmarks[mp_hands.HandLandmark.MIDDLE_FINGER_TIP].y <
-              landmarks[mp_hands.HandLandmark.MIDDLE_FINGER_PIP].y and
-              landmarks[mp_hands.HandLandmark.RING_FINGER_TIP].y >
-              landmarks[mp_hands.HandLandmark.RING_FINGER_PIP].y and
-              landmarks[mp_hands.HandLandmark.PINKY_TIP].y >
-              landmarks[mp_hands.HandLandmark.PINKY_PIP].y):
-            return 'scissors'
-        return None
-
-def get_winner(player_choice, computer_choice):
+# --- Game Logic ---
+def determine_winner(player_choice, computer_choice):
     if player_choice == computer_choice:
-        return "tie"
+        return "It's a tie!"
     elif (player_choice == 'rock' and computer_choice == 'scissors') or \
          (player_choice == 'paper' and computer_choice == 'rock') or \
          (player_choice == 'scissors' and computer_choice == 'paper'):
-        return "player"
+        st.session_state.player_score += 1
+        return "You win this round! 🎉"
     else:
-        return "computer"
+        st.session_state.computer_score += 1
+        return "Computer wins this round! 💻"
 
-# --- Streamlit App ---
-st.title("✊✋✌ Rock, Paper, Scissors")
-st.write("Play against the computer!")
+# --- Main App Body ---
+st.title("Rock, Paper, Scissors! 🪨📄✂️")
+st.markdown("Play against the computer by clicking a button. First to 3 wins!")
 
-player_score = 0
-computer_score = 0
+st.markdown(f"**Current Score:** You {st.session_state.player_score} - {st.session_state.computer_score} Computer")
 
-if webcam_available:
-    st.write("Webcam detected. Show your hand to play!")
+if not st.session_state.game_started:
+    if st.button("Start Game"):
+        st.session_state.game_started = True
+        st.session_state.player_score = 0
+        st.session_state.computer_score = 0
+        st.rerun()
 else:
-    st.write("Webcam not available. Gestures will be simulated.")
+    if st.session_state.player_score >= rounds_to_win or st.session_state.computer_score >= rounds_to_win:
+        if st.session_state.player_score > st.session_state.computer_score:
+            st.success(f"**Congratulations! You won the game {st.session_state.player_score} to {st.session_state.computer_score}! 🏆**")
+        else:
+            st.error(f"**Sorry, the computer won the game {st.session_state.computer_score} to {st.session_state.player_score}. 🤖**")
+        
+        st.session_state.game_started = False
+        st.session_state.winner_message = ""
+        
+        if st.button("Play Again?"):
+            st.rerun()
 
-play = st.button("Play Round")
-
-if play:
-    # If webcam available locally, you can implement real detection here
-    if webcam_available:
-        st.warning("Webcam input is not supported on Streamlit Cloud. Run locally to use your camera.")
-        player_choice = random.choice(choices)
     else:
-        player_choice = random.choice(choices)
+        st.write("Click your choice to play the next round!")
 
-    computer_choice = random.choice(choices)
-    winner = get_winner(player_choice, computer_choice)
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            if st.button("Rock 🪨"):
+                player_choice = "rock"
+                computer_choice = random.choice(choices)
+                st.write(f"You chose: **{player_choice.upper()}**")
+                st.write(f"Computer chose: **{computer_choice.upper()}**")
+                result = determine_winner(player_choice, computer_choice)
+                st.subheader(result)
+        with col2:
+            if st.button("Paper 📄"):
+                player_choice = "paper"
+                computer_choice = random.choice(choices)
+                st.write(f"You chose: **{player_choice.upper()}**")
+                st.write(f"Computer chose: **{computer_choice.upper()}**")
+                result = determine_winner(player_choice, computer_choice)
+                st.subheader(result)
+        with col3:
+            if st.button("Scissors ✂️"):
+                player_choice = "scissors"
+                computer_choice = random.choice(choices)
+                st.write(f"You chose: **{player_choice.upper()}**")
+                st.write(f"Computer chose: **{computer_choice.upper()}**")
+                result = determine_winner(player_choice, computer_choice)
+                st.subheader(result)
 
-    if winner == "player":
-        player_score += 1
-        st.success(f"You chose {player_choice}, Computer chose {computer_choice} → You Win 🎉")
-    elif winner == "computer":
-        computer_score += 1
-        st.error(f"You chose {player_choice}, Computer chose {computer_choice} → Computer Wins 🤖")
-    else:
-        st.info(f"You chose {player_choice}, Computer chose {computer_choice} → Tie 😅")
+        st.markdown(f"**Current Score:** You {st.session_state.player_score} - {st.session_state.computer_score} Computer")
