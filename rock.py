@@ -42,7 +42,7 @@ if not st.session_state.game_started:
         st.session_state.game_started = True
         st.session_state.player_score = 0
         st.session_state.computer_score = 0
-        st.experimental_rerun()
+        st.rerun()
 else:
     if st.session_state.player_score >= rounds_to_win or st.session_state.computer_score >= rounds_to_win:
         if st.session_state.player_score > st.session_state.computer_score:
