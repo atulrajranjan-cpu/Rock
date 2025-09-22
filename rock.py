@@ -9,7 +9,7 @@ rounds_to_win = 3  # Best of 5
 if 'player_score' not in st.session_state:
     st.session_state.player_score = 0
 if 'computer_score' not in st.session_state:
-    st.session_score = 0
+    st.session_state.computer_score = 0
 if 'game_started' not in st.session_state:
     st.session_state.game_started = False
 if 'winner_message' not in st.session_state:
