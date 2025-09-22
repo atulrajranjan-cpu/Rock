@@ -14,28 +14,38 @@ detector = HandDetector(detectionCon=0.7, maxHands=1)
 
 # --- Function to get gesture from hand landmarks ---
 def get_gesture_from_fingers(fingers):
+    # fingers is a list of 5 elements, 1 for finger up, 0 for finger down
     if fingers == [0, 0, 0, 0, 0]:
-        return 'rock'
+        return 'rock'  # All fingers down
     elif fingers == [1, 1, 1, 1, 1]:
-        return 'paper'
+        return 'paper' # All fingers up
     elif fingers == [0, 1, 1, 0, 0]:
-        return 'scissors'
+        return 'scissors' # Index and middle fingers up
     return None
 
 # --- Main Streamlit App ---
 def main():
     st.title("Rock, Paper, Scissors! 🪨📄✂️")
     st.markdown("Play against the computer using hand gestures. First to 3 wins!")
-
+    
+    # Initialize session state for game variables
     if 'player_score' not in st.session_state:
         st.session_state.player_score = 0
     if 'computer_score' not in st.session_state:
         st.session_state.computer_score = 0
     if 'game_started' not in st.session_state:
         st.session_state.game_started = False
-
+    
     status_text = st.empty()
     status_text.write("Click 'Start Game' to begin.")
+
+    col1, col2 = st.columns(2)
+    with col1:
+        st.subheader("Your Move")
+        player_image_placeholder = st.empty()
+    with col2:
+        st.subheader("Computer's Move")
+        computer_image_placeholder = st.empty()
 
     st.markdown(f"**Current Score:** You {st.session_state.player_score} - {st.session_state.computer_score} Computer")
 
@@ -48,28 +58,28 @@ def main():
     if st.session_state.game_started and st.session_state.player_score < rounds_to_win and st.session_state.computer_score < rounds_to_win:
         st.write("Show your hand gesture to the camera after the countdown.")
         countdown_placeholder = st.empty()
-
+        
         for i in range(3, 0, -1):
             countdown_placeholder.markdown(f"**Get ready... {i}**", unsafe_allow_html=True)
             time.sleep(1)
-
+        
         countdown_placeholder.markdown("**SHOW!**", unsafe_allow_html=True)
-
+        
         frame = st.camera_input("Take a photo of your hand")
-
+        
         if frame is not None:
             file_bytes = np.asarray(bytearray(frame.read()), dtype=np.uint8)
             img = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
 
             hands_list, img_drawn = detector.findHands(img, flipType=False)
-
+            
             player_gesture = None
             if hands_list:
                 hand = hands_list[0]
                 fingers = detector.fingersUp(hand)
                 player_gesture = get_gesture_from_fingers(fingers)
-
-                st.image(img_drawn, channels="BGR", caption="Your Hand")
+                
+                player_image_placeholder.image(img_drawn, channels="BGR", caption="Your Hand")
 
             computer_choice = random.choice(choices)
 
@@ -90,9 +100,8 @@ def main():
                     st.error("Computer wins this round! 💻")
             else:
                 st.warning("Could not detect a clear gesture. Please try again.")
-
-            st.markdown(f"**Current Score:** You {st.session_state.player_score} - {st.session_state.computer_score} Computer")
-
+    
+    # Final winner announcement
     if st.session_state.player_score >= rounds_to_win or st.session_state.computer_score >= rounds_to_win:
         if st.session_state.player_score > st.session_state.computer_score:
             st.success(f"**Congratulations! You won the game {st.session_state.player_score} to {st.session_state.computer_score}! 🏆**")
