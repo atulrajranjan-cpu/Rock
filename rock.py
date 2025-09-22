@@ -1,113 +1,122 @@
-import streamlit as st
 import cv2
 import mediapipe as mp
 import random
-import numpy as np
-import time
+import streamlit as st
 
-# --- Game Variables ---
-choices = ['rock', 'paper', 'scissors']
-rounds_to_win = 3  # Best of 5
-
-# --- Streamlit Session State ---
-if 'player_score' not in st.session_state:
-    st.session_state.player_score = 0
-if 'computer_score' not in st.session_state:
-    st.session_state.computer_score = 0
-if 'game_started' not in st.session_state:
-    st.session_state.game_started = False
-if 'winner_message' not in st.session_state:
-    st.session_state.winner_message = ""
-
-# --- Initialize MediaPipe Hands ---
+# Initialize MediaPipe Hands
 mp_hands = mp.solutions.hands
-hands = mp_hands.Hands(min_detection_confidence=0.7, min_tracking_confidence=0.5)
-mp_drawing = mp.solutions.drawing_utils
+hands = mp_hands.Hands(min_detection_confidence=0.7, min_tracking_confidence=0.7)
+mp_draw = mp.solutions.drawing_utils
 
-# --- Function to get gesture from hand landmarks ---
-def get_gesture(hand_landmarks):
-    if not hand_landmarks:
-        return None
-    
-    landmarks = hand_landmarks.landmark
-    
-    # Check for closed fist (Rock)
-    if (landmarks[mp_hands.HandLandmark.INDEX_FINGER_TIP].y > landmarks[mp_hands.HandLandmark.INDEX_FINGER_PIP].y and
-        landmarks[mp_hands.HandLandmark.MIDDLE_FINGER_TIP].y > landmarks[mp_hands.HandLandmark.MIDDLE_FINGER_PIP].y and
-        landmarks[mp_hands.HandLandmark.RING_FINGER_TIP].y > landmarks[mp_hands.HandLandmark.RING_FINGER_PIP].y and
-        landmarks[mp_hands.HandLandmark.PINKY_FINGER_TIP].y > landmarks[mp_hands.HandLandmark.PINKY_FINGER_PIP].y):
-        return 'rock'
+# Game variables
+player_score = 0
+computer_score = 0
+game_rounds = 5
 
-    # Check for open hand (Paper)
-    elif (landmarks[mp_hands.HandLandmark.INDEX_FINGER_TIP].y < landmarks[mp_hands.HandLandmark.INDEX_FINGER_PIP].y and
-          landmarks[mp_hands.HandLandmark.MIDDLE_FINGER_TIP].y < landmarks[mp_hands.HandLandmark.MIDDLE_FINGER_PIP].y and
-          landmarks[mp_hands.HandLandmark.RING_FINGER_TIP].y < landmarks[mp_hands.HandLandmark.RING_FINGER_PIP].y and
-          landmarks[mp_hands.HandLandmark.PINKY_FINGER_TIP].y < landmarks[mp_hands.HandLandmark.PINKY_FINGER_PIP].y):
-        return 'paper'
-        
-    # Check for scissors (Index and middle fingers up)
-    elif (landmarks[mp_hands.HandLandmark.INDEX_FINGER_TIP].y < landmarks[mp_hands.HandLandmark.INDEX_FINGER_PIP].y and
-          landmarks[mp_hands.HandLandmark.MIDDLE_FINGER_TIP].y < landmarks[mp_hands.HandLandmark.MIDDLE_FINGER_PIP].y and
-          landmarks[mp_hands.HandLandmark.RING_FINGER_TIP].y > landmarks[mp_hands.HandLandmark.RING_FINGER_PIP].y and
-          landmarks[mp_hands.HandLandmark.PINKY_FINGER_TIP].y > landmarks[mp_hands.HandLandmark.PINKY_FINGER_PIP].y):
-        return 'scissors'
-    
-    return None
+# Streamlit App
+st.title("Rock-Paper-Scissors: Hand Gesture Game")
+st.write("Hold your hand in front of the camera to play!")
+st.write("🖐️ Rock: 0 fingers up")
+st.write("✌️ Scissors: 2 fingers up")
+st.write("✋ Paper: 5 fingers up")
 
-# --- Game Logic ---
-def determine_winner(player_choice, computer_choice):
-    if player_choice == computer_choice:
-        return "It's a tie!"
-    elif (player_choice == 'rock' and computer_choice == 'scissors') or \
-         (player_choice == 'paper' and computer_choice == 'rock') or \
-         (player_choice == 'scissors' and computer_choice == 'paper'):
-        st.session_state.player_score += 1
-        return "You win this round! 🎉"
+frame_placeholder = st.empty()
+result_placeholder = st.empty()
+
+# Function to count fingers
+def count_fingers(landmarks):
+    finger_tips = [8, 12, 16, 20]  # Indices for the tips of the index, middle, ring, and pinky fingers
+    finger_up = []
+
+    # Thumb check
+    if landmarks[4].x < landmarks[2].x:
+        finger_up.append(True)
     else:
-        st.session_state.computer_score += 1
-        return "Computer wins this round! 💻"
+        finger_up.append(False)
 
-# --- Main App Body ---
-st.title("Rock, Paper, Scissors! 🪨📄✂️")
-st.markdown("Play against the computer by showing your hand to the camera!")
-
-st.markdown(f"**Current Score:** You {st.session_state.player_score} - {st.session_state.computer_score} Computer")
-
-if st.session_state.player_score >= rounds_to_win or st.session_state.computer_score >= rounds_to_win:
-    if st.session_state.player_score > st.session_state.computer_score:
-        st.success(f"**Congratulations! You won the game {st.session_state.player_score} to {st.session_state.computer_score}! 🏆**")
-    else:
-        st.error(f"**Sorry, the computer won the game {st.session_state.computer_score} to {st.session_state.player_score}. 🤖**")
-    
-    if st.button("Play Again?"):
-        st.session_state.player_score = 0
-        st.session_state.computer_score = 0
-        st.rerun()
-else:
-    st.write("Show your hand gesture to the camera to play the next round!")
-    frame = st.camera_input("Take a photo of your hand")
-    
-    if frame is not None:
-        file_bytes = np.asarray(bytearray(frame.read()), dtype=np.uint8)
-        img = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
-        img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        
-        results = hands.process(img_rgb)
-        
-        player_gesture = None
-        if results.multi_hand_landmarks:
-            for hand_landmarks in results.multi_hand_landmarks:
-                mp_drawing.draw_landmarks(img, hand_landmarks, mp_hands.HAND_CONNECTIONS)
-                player_gesture = get_gesture(hand_landmarks)
-        
-        st.image(img, channels="BGR", caption="Your Hand")
-        
-        computer_choice = random.choice(choices)
-
-        if player_gesture:
-            st.write(f"You chose: **{player_gesture.upper()}**")
-            st.write(f"Computer chose: **{computer_choice.upper()}**")
-            result = determine_winner(player_gesture, computer_choice)
-            st.subheader(result)
+    # Other fingers check
+    for tip_id in finger_tips:
+        if landmarks[tip_id].y < landmarks[tip_id - 2].y:
+            finger_up.append(True)
         else:
-            st.warning("Could not detect a clear gesture. Please try again.")
+            finger_up.append(False)
+
+    return finger_up.count(True)
+
+# Main game loop
+cap = cv2.VideoCapture(0)
+
+if not cap.isOpened():
+    st.error("Error: Could not open webcam.")
+else:
+    while cap.isOpened() and player_score < game_rounds and computer_score < game_rounds:
+        ret, frame = cap.read()
+        if not ret:
+            break
+
+        # Flip the frame horizontally for a natural mirror-like view
+        frame = cv2.flip(frame, 1)
+
+        # Convert the BGR image to RGB
+        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+        # Process the frame with MediaPipe Hands
+        result = hands.process(rgb_frame)
+
+        player_choice = "Waiting..."
+        computer_choice = "Waiting..."
+
+        if result.multi_hand_landmarks:
+            for hand_landmarks in result.multi_hand_landmarks:
+                # Get landmarks of the hand
+                landmarks = hand_landmarks.landmark
+
+                # Count the number of fingers up
+                finger_count = count_fingers(landmarks)
+
+                if finger_count == 0:
+                    player_choice = "Rock"
+                elif finger_count == 2:
+                    player_choice = "Scissors"
+                elif finger_count == 5:
+                    player_choice = "Paper"
+                else:
+                    player_choice = "Waiting..."
+
+                # Draw landmarks on the frame
+                mp_draw.draw_landmarks(frame, hand_landmarks, mp_hands.HAND_CONNECTIONS)
+        
+        # Computer's turn
+        if player_choice != "Waiting...":
+            choices = ["Rock", "Paper", "Scissors"]
+            computer_choice = random.choice(choices)
+
+            # Determine the winner
+            with result_placeholder.container():
+                if player_choice == computer_choice:
+                    st.write("It's a tie!")
+                elif (
+                    (player_choice == "Rock" and computer_choice == "Scissors")
+                    or (player_choice == "Scissors" and computer_choice == "Paper")
+                    or (player_choice == "Paper" and computer_choice == "Rock")
+                ):
+                    st.write("You win this round!")
+                    player_score += 1
+                else:
+                    st.write("Computer wins this round!")
+                    computer_score += 1
+                st.write(f"Your choice: **{player_choice}** | Computer's choice: **{computer_choice}**")
+                st.write(f"Score: You {player_score} - {computer_score} Computer")
+        
+        # Display the frame with the placeholder
+        frame_placeholder.image(frame, channels="BGR")
+
+    # End of game
+    st.write("---")
+    if player_score == game_rounds:
+        st.success(f"🎉 Congratulations! You won the game with a final score of {player_score} to {computer_score}!")
+    elif computer_score == game_rounds:
+        st.error(f"😭 The computer won the game with a final score of {computer_score} to {player_score}.")
+
+    cap.release()
+    cv2.destroyAllWindows()
