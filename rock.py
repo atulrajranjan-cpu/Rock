@@ -111,7 +111,6 @@ class RockPaperScissorsProcessor(VideoProcessorBase):
 
 # --- Main App UI ---
 st.title("Rock, Paper, Scissors! 🪨📄✂️")
-st.markdown("Play against the computer using hand gestures. First to 3 wins!")
 
 st.markdown(f"**Current Score:** You {st.session_state.player_score} - {st.session_state.computer_score} Computer")
 
